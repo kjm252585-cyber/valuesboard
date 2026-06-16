@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘의 의도 보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1F3EC;
+    --paper-card:#FAFBF7;
+    --ink:#283330;
+    --ink-soft:#283330B3;
+    --line:#D8DCCF;
+    --moss:#5B7B5E;   /* Curious Explorer */
+    --slate:#6E89A3;  /* Peaceful Observer */
+    --ochre:#C99A4B;  /* Reflective Writer */
+    --rose:#B6708A;   /* Appreciator of Beauty */
+    --soil:#8C6E54;   /* Steward of My Body */
+    --teal:#4F8FA6;   /* Meaningful Connector */
+    --clay:#C2785F;   /* Courageous Builder */
+    --warn:#A35B49;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Work Sans', sans-serif; -webkit-font-smoothing:antialiased; }
+  .board{ max-width:980px; margin:0 auto; padding:28px 20px 60px; }
+  header.top{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; }
+  header.top h1{ font-family:'Fraunces', serif; font-weight:600; font-size:32px; margin:0 0 4px 0; letter-spacing:-0.01em; }
+  header.top p{ margin:0; font-size:13.5px; color:var(--ink-soft); }
+  .date-pill{ font-family:'IBM Plex Mono', monospace; font-size:12px; background:var(--paper-card); border:1px solid var(--line); border-radius:999px; padding:6px 14px; white-space:nowrap; }
+  .reframe-line{ font-style:italic; font-size:13px; color:var(--ink-soft); margin:10px 0 22px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+
+  .season-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; }
+  .season-chip{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; padding:7px 13px; border-radius:999px; border:1px solid var(--line); background:var(--paper-card); cursor:pointer; color:var(--ink-soft); }
+  .season-chip.active{ background:var(--ink); color:var(--paper-card); border-color:var(--ink); }
+
+  .card{ background:var(--paper-card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:0 1px 0 rgba(40,51,48,0.04); margin-bottom:20px; }
+  .card h2{ font-family:'Fraunces', serif; font-weight:600; font-size:17px; margin:0 0 4px 0; }
+  .card .step-tag{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); letter-spacing:.04em; }
+  .card .sub{ font-size:12.5px; color:var(--ink-soft); margin:4px 0 14px 0; line-height:1.5; }
+
+  .identity-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(118px,1fr)); gap:10px; }
+  .identity-card{ position:relative; background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius); padding:14px 8px; text-align:center; cursor:pointer; transition:border-color .15s ease; }
+  .identity-card .emoji{ font-size:24px; display:block; margin-bottom:6px; }
+  .identity-card .name{ font-size:11.5px; font-weight:600; display:block; }
+  .identity-card .kr{ font-size:10.5px; color:var(--ink-soft); display:block; margin-top:3px; line-height:1.3; }
+  .identity-card .rec-tag{ position:absolute; top:6px; right:6px; font-size:9px; font-family:'IBM Plex Mono',monospace; color:var(--moss); }
+  .identity-card.selected{ border-width:2px; }
+
+  .panel{ margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+  .panel .panel-title{ font-size:12.5px; color:var(--ink-soft); margin-bottom:8px; }
+  .chip-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .pool-chip, .suggestion-chip{ font-size:12.5px; padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:var(--paper); cursor:pointer; color:var(--ink); }
+  .pool-chip.active, .suggestion-chip.active{ color:#fff; border-color:transparent; }
+  .evening-q-line{ font-size:12px; color:var(--ink-soft); margin-top:4px; }
+  .evening-q-line button{ font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:none; text-decoration:underline; color:var(--ink); cursor:pointer; padding:0; margin-left:4px; }
+
+  label.field{ display:block; font-size:12.5px; color:var(--ink-soft); margin:12px 0 5px; }
+  textarea, input.note-input{ width:100%; font-family:'Work Sans', sans-serif; font-size:13.5px; color:var(--ink); background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:9px 10px; resize:vertical; }
+  textarea{min-height:46px;}
+
+  .trap-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:10px; }
+  .trap-card{ background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius); padding:12px 14px; cursor:pointer; }
+  .trap-card .name{ font-size:13px; font-weight:600; }
+  .trap-card ul{ margin:6px 0 0; padding-left:16px; font-size:11.5px; color:var(--ink-soft); line-height:1.5; }
+  .trap-card.selected{ border-color:var(--warn); border-width:2px; }
+  .trap-antidote{ font-size:12.5px; margin-top:10px; }
+  .trap-antidote strong{ color:var(--warn); }
+
+  .summary-card{ border:1.5px dashed var(--ink); background:var(--paper-card); border-radius:var(--radius); padding:22px; margin-bottom:20px; }
+  .summary-card h2{ margin-bottom:14px; }
+  .summary-row{ display:flex; gap:10px; padding:7px 0; font-size:13.5px; border-bottom:1px solid var(--line); }
+  .summary-row:last-child{ border-bottom:none; }
+  .summary-row .label{ flex:0 0 110px; color:var(--ink-soft); font-size:12px; padding-top:1px; }
+  .summary-row .value{ flex:1; }
+  .summary-row .value.empty{ color:var(--ink-soft); font-style:italic; }
+
+  .evening-card{ background:var(--paper-card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 20px; margin-bottom:20px; }
+  .evening-card h3{ font-size:13px; margin:0 0 10px; font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); font-weight:500; }
+  .evening-check{ display:flex; align-items:center; gap:8px; font-size:13px; padding:5px 0; }
+  .evening-check input{ width:15px; height:15px; accent-color:var(--ink); }
+
+  .strip-row{ display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
+  .day-chip{ flex:0 0 auto; min-width:84px; background:var(--paper-card); border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; text-align:center; }
+  .day-chip .d{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); }
+  .day-chip .emoji{ font-size:18px; margin:6px 0 2px; }
+  .day-chip .marks{ font-size:10px; color:var(--ink-soft); }
+
+  .bar-row{ display:flex; align-items:flex-end; gap:10px; height:90px; padding-top:10px; }
+  .bar-col{ display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; }
+  .bar{ width:100%; max-width:26px; border-radius:4px 4px 0 0; }
+  .bar-count{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-soft); }
+  .bar-label{ font-size:15px; }
+
+  footer.quote{ margin-top:14px; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.02em; color:var(--ink-soft); line-height:1.7; }
+  .reset-link{ display:block; text-align:center; margin:6px 0 14px; font-size:11px; color:var(--ink-soft); text-decoration:underline; cursor:pointer; background:none; border:none; font-family:'Work Sans', sans-serif; }
+  @media print{ body{background:#fff;} .card,.summary-card,.evening-card{box-shadow:none; border:1px solid #999;} .reset-link{display:none;} -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <header class="top">
+    <div>
+      <h1>오늘의 의도 보드</h1>
+      <p>아침 2분, 오늘 어떤 사람으로 살고 싶은지 먼저 정하기.</p>
+    </div>
+    <div style="text-align:right;">
+      <div class="date-pill" id="todayPill">—</div>
+      <div id="storageMode" style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--ink-soft); margin-top:5px;"></div>
+    </div>
+  </header>
+  <div class="reframe-line">"오늘 뭘 해야 하지?"가 아니라, "오늘 어떤 사람으로 살고 싶지?"</div>
+
+  <div class="season-row" id="seasonRow"></div>
+
+  <section class="card">
+    <span class="step-tag">STEP 1</span>
+    <h2>오늘 기르고 싶은 정체성</h2>
+    <p class="sub">매일 하나만. 하나를 고르면 그 행동 목록과 저녁 질문이 아래에 나타나요.</p>
+    <div class="identity-grid" id="identityGrid"></div>
+    <div class="panel" id="identityPanel"></div>
+  </section>
+
+  <section class="card">
+    <span class="step-tag">STEP 2</span>
+    <h2>오늘의 나다운 행동, 딱 하나</h2>
+    <p class="sub">위 목록에서 고르거나, 직접 적어도 좋아요.</p>
+    <input class="note-input" id="actionInput" type="text" placeholder="예: 도서관 가서 책 10페이지 읽기">
+  </section>
+
+  <section class="card">
+    <span class="step-tag">STEP 3</span>
+    <h2>오늘 피하고 싶은 함정</h2>
+    <p class="sub">하나를 고르면 증상과 대응이 나타나요.</p>
+    <div class="trap-grid" id="trapGrid"></div>
+    <div class="panel" id="trapPanel"></div>
+  </section>
+
+  <section class="card">
+    <span class="step-tag">STEP 4</span>
+    <h2>오늘의 작은 모험 <span style="color:var(--ink-soft); font-weight:400;">(선택)</span></h2>
+    <p class="sub">매일은 아니어도 괜찮아요. 작아도 돼요.</p>
+    <div class="chip-row" id="adventureChips"></div>
+    <input class="note-input" id="adventureInput" type="text" placeholder="예: 다른 도서관 코너에서 읽기">
+  </section>
+
+  <section class="card">
+    <span class="step-tag">STEP 5</span>
+    <h2>오늘 밤의 질문</h2>
+    <p class="sub">아침에 미리 정해두면, 하루가 그 질문을 향해 흘러가요.</p>
+    <div class="chip-row" id="questionChips"></div>
+    <input class="note-input" id="questionInput" type="text" placeholder='예: "What did I discover today?"'>
+  </section>
+
+  <section class="summary-card" id="summaryCard">
+    <h2>오늘의 의도</h2>
+    <div id="summaryBody"></div>
+  </section>
+
+  <section class="evening-card">
+    <h3>선택 · 오늘 밤 돌아와서</h3>
+    <label class="evening-check"><input type="checkbox" id="eveningAction"> 오늘의 행동을 했어요</label>
+    <label class="evening-check"><input type="checkbox" id="eveningTrap"> 함정을 피했어요</label>
+    <label class="field" for="eveningAnswer" id="eveningAnswerLabel">오늘 밤의 질문에 대한 답</label>
+    <textarea id="eveningAnswer" placeholder="짧게, 한두 줄"></textarea>
+  </section>
+
+  <section class="card week-strip">
+    <h2>이번 주 흐름</h2>
+    <p class="sub">최근 7일, 어떤 정체성을 골랐는지.</p>
+    <div class="strip-row" id="stripRow"></div>
+  </section>
+
+  <section class="card balance">
+    <h2>최근 14일, 어떤 정체성에 더 머물렀나</h2>
+    <p class="sub">한쪽으로 치우쳐 있다면, 그 정체성을 오늘 골라보세요.</p>
+    <div class="bar-row" id="barRow"></div>
+  </section>
+
+  <button class="reset-link" id="resetBtn">모든 기록 지우기</button>
+
+  <footer class="quote">
+    "If today felt meaningful, what would have happened?<br>그 답을 먼저 정하고, 하루를 시작하기."
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'values-board-entries';
+  const SEASON_KEY = 'values-board-season';
+
+  const IDENTITIES = [
+    { key:'explorer', emoji:'📚', name:'Curious Explorer', kr:'나는 세상을 이해하는 사람이다.', color:'var(--moss)',
+      pool:['책 10페이지 읽기','논문 한 편 훑기','처음 보는 주제 검색','TED 영상 하나 보기','새로운 동네 걷기','박물관 가기','도서관 가기','낯선 카페 가기','AI에게 궁금한 것 질문하기','영어 단어 5개 배우기'],
+      eveningQ:'What did I discover today?' },
+    { key:'peace', emoji:'🌿', name:'Peaceful Observer', kr:'나는 평화를 선택하는 사람이다.', color:'var(--slate)',
+      pool:['10분 명상','휴대폰 없이 산책','차 한 잔 마시기','창밖 보기 5분','호흡 20회 세기','SNS 사용 시간 제한','조용한 음악 듣기','공원 가기','자연 사진 찍기','일찍 자기'],
+      eveningQ:'What helped me feel grounded today?' },
+    { key:'writer', emoji:'✍️', name:'Reflective Writer', kr:'나는 경험을 의미로 바꾸는 사람이다.', color:'var(--ochre)',
+      pool:['저널 3줄','일기','에세이 초안','블로그 글','독서 노트','영화 감상문','오늘 배운 것 정리','미래의 나에게 편지','음성메모 녹음','Gratitude 3개 적기'],
+      eveningQ:'What am I trying to understand?' },
+    { key:'beauty', emoji:'🎨', name:'Appreciator of Beauty', kr:'나는 아름다움을 발견하는 사람이다.', color:'var(--rose)',
+      pool:['사진 찍기','사진 편집','미술관','전시회','영화 보기','클래식/재즈 듣기','좋아하는 사진집 보기','예쁜 카페 가기','꽃 사기','아름다운 문장 필사'],
+      eveningQ:'What felt beautiful today?' },
+    { key:'body', emoji:'💪', name:'Steward of My Body', kr:'나는 내 몸을 돌보는 사람이다.', color:'var(--soil)',
+      pool:['헬스장','덤벨 운동','요가','스트레칭','8천 보 걷기','단백질 챙기기','물 충분히 마시기','수면 7시간+','건강한 식사','자세 의식하기'],
+      eveningQ:'How did I care for my body today?' },
+    { key:'connector', emoji:'🤝', name:'Meaningful Connector', kr:'나는 사람을 깊이 만나는 사람이다.', color:'var(--teal)',
+      pool:['친구에게 안부 보내기','부모님 통화','커피챗','의미 있는 대화','감사 메시지 보내기','누군가 칭찬하기','봉사 활동','이벤트 참여','사람 관찰하기'],
+      eveningQ:'Who did I connect with today?' },
+    { key:'builder', emoji:'🚀', name:'Courageous Builder', kr:'나는 생각을 행동으로 옮기는 사람이다.', color:'var(--clay)',
+      pool:['지원서 1개','CV 수정','어려운 이메일 보내기','논문 작업','미뤘던 일 시작','25분 집중 세션','네트워킹 메시지','새로운 프로젝트 초안','재무 정리','계획 세우기'],
+      eveningQ:'What did I move forward today?' }
+  ];
+
+  const TRAPS = [
+    { key:'anxiety', name:'불안 모드', symptoms:['LinkedIn 계속 확인','이메일 새로고침','미래 걱정'], antidote:'평화 행동 하나 (Peaceful Observer 목록에서)' },
+    { key:'comparison', name:'비교 모드', symptoms:['남과 비교','취업 비교','연애 비교'], antidote:'저널링 5분' },
+    { key:'escape', name:'회피 모드', symptoms:['릴스','유튜브 무한시청','의미 없는 스크롤'], antidote:'독서 10분' },
+    { key:'overthinking', name:'과잉생각 모드', symptoms:['행동보다 생각만 계속'], antidote:'Courageous Builder 행동 하나' }
+  ];
+
+  const SEASONS = [
+    { key:'jobsearch', label:'취업 준비 시즌', recommend:['builder','writer'] },
+    { key:'recovery', label:'회복 시즌', recommend:['peace','body'] },
+    { key:'exploration', label:'탐험 시즌', recommend:['explorer','beauty'] },
+    { key:'creation', label:'창작 시즌', recommend:['writer','beauty','builder'] }
+  ];
+
+  const ADVENTURE_SUGGESTIONS = ['처음 가는 길','새 카페','다른 독서 장소','새로운 영화','박물관/전시'];
+  const QUESTION_SUGGESTIONS = ['What surprised me today?','What am I learning about myself?','What deserves my attention?','What would peace choose?','What would curiosity choose?','What am I avoiding?','What felt meaningful today?','What story am I telling myself?'];
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function shortDate(s){ const p=s.split('-'); return p[1]+'/'+p[2]; }
+  function getIdentity(key){ return IDENTITIES.find(i=>i.key===key) || null; }
+  function getTrap(key){ return TRAPS.find(t=>t.key===key) || null; }
+
+  let entries = [];
+  let season = null;
+
+  function blankEntry(date){
+    return { date, identity:null, action:'', trap:null, trapDetail:'', adventure:'', question:'',
+      eveningDone:{ actionDone:false, trapAvoided:false, eveningAnswer:'' } };
+  }
+  function findEntry(date){ return entries.find(e=>e.date===date) || null; }
+
+  // Use Claude's cloud storage when this page runs inside a Claude.ai artifact frame.
+  // Fall back to plain localStorage when it's opened as a standalone file (e.g. saved
+  // to the iPhone and opened directly in Safari), so the board still remembers entries.
+  const hasCloudStorage = (typeof window.storage !== 'undefined') && window.storage && typeof window.storage.get === 'function';
+
+  async function storageGetRaw(key){
+    if(hasCloudStorage){
+      try{ const res = await window.storage.get(key); return (res && res.value) ? res.value : null; }
+      catch(e){ return null; }
+    }
+    try{ return localStorage.getItem(key); }catch(e){ return null; }
+  }
+  async function storageSetRaw(key, value){
+    if(hasCloudStorage){
+      try{ await window.storage.set(key, value); }catch(e){ console.error('저장 실패', e); }
+      return;
+    }
+    try{ localStorage.setItem(key, value); }catch(e){ console.error('저장 실패', e); }
+  }
+
+  async function loadEntries(){
+    const raw = await storageGetRaw(STORAGE_KEY);
+    try{ entries = raw ? JSON.parse(raw) : []; }catch(e){ entries = []; }
+  }
+  async function persistEntries(){
+    entries.sort((a,b)=>a.date.localeCompare(b.date));
+    if(entries.length > 60) entries = entries.slice(entries.length - 60);
+    await storageSetRaw(STORAGE_KEY, JSON.stringify(entries));
+  }
+  async function loadSeason(){
+    const raw = await storageGetRaw(SEASON_KEY);
+    try{ season = raw ? JSON.parse(raw).season : null; }catch(e){ season = null; }
+  }
+  async function persistSeason(){
+    await storageSetRaw(SEASON_KEY, JSON.stringify({season}));
+  }
+
+  function ensureToday(){
+    const t = todayStr();
+    let e = findEntry(t);
+    if(!e){ e = blankEntry(t); entries.push(e); }
+    else{
+      const b = blankEntry(t);
+      Object.keys(b).forEach(k=>{ if(e[k] === undefined) e[k] = b[k]; });
+      if(!e.eveningDone) e.eveningDone = b.eveningDone;
+    }
+    return e;
+  }
+
+  function renderHeaderDate(){ document.getElementById('todayPill').textContent = todayStr(); }
+
+  function renderSeasonRow(){
+    const row = document.getElementById('seasonRow');
+    row.innerHTML = '';
+    SEASONS.forEach(s=>{
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'season-chip' + (season === s.key ? ' active' : '');
+      chip.textContent = s.label;
+      chip.addEventListener('click', async ()=>{
+        season = (season === s.key) ? null : s.key;
+        await persistSeason();
+        renderSeasonRow();
+        renderIdentityGrid();
+      });
+      row.appendChild(chip);
+    });
+  }
+
+  function renderIdentityGrid(){
+    const e = ensureToday();
+    const grid = document.getElementById('identityGrid');
+    grid.innerHTML = '';
+    const recommended = season ? (SEASONS.find(s=>s.key===season) || {}).recommend || [] : [];
+    IDENTITIES.forEach(id=>{
+      const card = document.createElement('div');
+      card.className = 'identity-card' + (e.identity === id.key ? ' selected' : '');
+      if(e.identity === id.key) card.style.borderColor = id.color;
+      card.innerHTML =
+        (recommended.includes(id.key) ? '<span class="rec-tag">✨ 추천</span>' : '') +
+        '<span class="emoji">' + id.emoji + '</span>' +
+        '<span class="name">' + id.name + '</span>' +
+        '<span class="kr">' + id.kr + '</span>';
+      card.addEventListener('click', async ()=>{
+        const today = ensureToday();
+        today.identity = (today.identity === id.key) ? null : id.key;
+        if(today.identity && !today.question){ today.question = getIdentity(today.identity).eveningQ; }
+        await persistEntries();
+        renderIdentityGrid();
+        renderIdentityPanel();
+        renderQuestionInput();
+        renderSummary();
+        renderStrip();
+        renderBalance();
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function renderIdentityPanel(){
+    const e = ensureToday();
+    const panel = document.getElementById('identityPanel');
+    if(!e.identity){ panel.innerHTML = ''; return; }
+    const id = getIdentity(e.identity);
+    let html = '<div class="panel-title">' + id.name + ' 행동 Pool — 하나를 고르면 위 칸에 채워져요</div><div class="chip-row">';
+    id.pool.forEach(p=>{
+      const active = e.action === p;
+      html += '<button type="button" class="pool-chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:'+id.color : '') + '" data-action="' + p.replace(/"/g,'&quot;') + '">' + p + '</button>';
+    });
+    html += '</div><div class="evening-q-line">오늘 밤 질문 제안: "' + id.eveningQ + '" <button type="button" id="useEveningQBtn">이 질문 사용하기</button></div>';
+    panel.innerHTML = html;
+    panel.querySelectorAll('.pool-chip').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const today = ensureToday();
+        today.action = btn.dataset.action;
+        await persistEntries();
+        renderIdentityPanel();
+        renderActionInput();
+        renderSummary();
+      });
+    });
+    const useBtn = document.getElementById('useEveningQBtn');
+    if(useBtn){
+      useBtn.addEventListener('click', async ()=>{
+        const today = ensureToday();
+        today.question = id.eveningQ;
+        await persistEntries();
+        renderQuestionInput();
+        renderSummary();
+      });
+    }
+  }
+
+  function renderActionInput(){
+    const e = ensureToday();
+    const input = document.getElementById('actionInput');
+    input.value = e.action || '';
+  }
+
+  function renderTrapGrid(){
+    const e = ensureToday();
+    const grid = document.getElementById('trapGrid');
+    grid.innerHTML = '';
+    TRAPS.forEach(t=>{
+      const card = document.createElement('div');
+      card.className = 'trap-card' + (e.trap === t.key ? ' selected' : '');
+      card.innerHTML = '<div class="name">' + t.name + '</div><ul>' + t.symptoms.map(s=>'<li>'+s+'</li>').join('') + '</ul>';
+      card.addEventListener('click', async ()=>{
+        const today = ensureToday();
+        today.trap = (today.trap === t.key) ? null : t.key;
+        await persistEntries();
+        renderTrapGrid();
+        renderTrapPanel();
+        renderSummary();
+        renderStrip();
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function renderTrapPanel(){
+    const e = ensureToday();
+    const panel = document.getElementById('trapPanel');
+    if(!e.trap){ panel.innerHTML = ''; return; }
+    const t = getTrap(e.trap);
+    panel.innerHTML =
+      '<div class="trap-antidote">대응 → <strong>' + t.antidote + '</strong></div>' +
+      '<label class="field" for="trapDetailInput">오늘은 구체적으로 어떻게 나타날까?</label>' +
+      '<input class="note-input" id="trapDetailInput" type="text" placeholder="예: 데이팅 앱 확인, 저녁 먹고 릴스">';
+    const input = document.getElementById('trapDetailInput');
+    input.value = e.trapDetail || '';
+    input.addEventListener('blur', async ()=>{
+      const today = ensureToday();
+      today.trapDetail = input.value;
+      await persistEntries();
+      renderSummary();
+    });
+  }
+
+  function renderAdventureChips(){
+    const e = ensureToday();
+    const row = document.getElementById('adventureChips');
+    row.innerHTML = '';
+    ADVENTURE_SUGGESTIONS.forEach(s=>{
+      const active = e.adventure === s;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'suggestion-chip' + (active ? ' active' : '');
+      if(active) chip.style.background = 'var(--ink)';
+      chip.textContent = s;
+      chip.addEventListener('click', async ()=>{
+        const today = ensureToday();
+        today.adventure = (today.adventure === s) ? '' : s;
+        await persistEntries();
+        renderAdventureChips();
+        renderAdventureInput();
+        renderSummary();
+      });
+      row.appendChild(chip);
+    });
+  }
+  function renderAdventureInput(){
+    document.getElementById('adventureInput').value = ensureToday().adventure || '';
+  }
+
+  function renderQuestionChips(){
+    const e = ensureToday();
+    const row = document.getElementById('questionChips');
+    row.innerHTML = '';
+    QUESTION_SUGGESTIONS.forEach(q=>{
+      const active = e.question === q;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'suggestion-chip' + (active ? ' active' : '');
+      if(active) chip.style.background = 'var(--ink)';
+      chip.textContent = q;
+      chip.addEventListener('click', async ()=>{
+        const today = ensureToday();
+        today.question = (today.question === q) ? '' : q;
+        await persistEntries();
+        renderQuestionChips();
+        renderQuestionInput();
+        renderSummary();
+      });
+      row.appendChild(chip);
+    });
+  }
+  function renderQuestionInput(){
+    document.getElementById('questionInput').value = ensureToday().question || '';
+    renderQuestionChips();
+  }
+
+  function renderSummary(){
+    const e = ensureToday();
+    const id = e.identity ? getIdentity(e.identity) : null;
+    const trap = e.trap ? getTrap(e.trap) : null;
+    let html = '';
+    html += summaryRow('정체성', id ? (id.emoji + ' ' + id.name) : null);
+    html += summaryRow('나다운 행동', e.action || null);
+    html += summaryRow('피하고 싶은 함정', trap ? ('⚠ ' + trap.name + (e.trapDetail ? ' — ' + e.trapDetail : '')) : null);
+    html += summaryRow('작은 모험', e.adventure || null);
+    html += summaryRow('오늘 밤의 질문', e.question ? ('"' + e.question + '"') : null);
+    document.getElementById('summaryBody').innerHTML = html;
+  }
+  function summaryRow(label, value){
+    return '<div class="summary-row"><div class="label">' + label + '</div><div class="value' + (value ? '' : ' empty') + '">' + (value || '아직 정하지 않음') + '</div></div>';
+  }
+
+  function renderEveningCard(){
+    const e = ensureToday();
+    document.getElementById('eveningAction').checked = !!e.eveningDone.actionDone;
+    document.getElementById('eveningTrap').checked = !!e.eveningDone.trapAvoided;
+    document.getElementById('eveningAnswer').value = e.eveningDone.eveningAnswer || '';
+    document.getElementById('eveningAnswerLabel').textContent = e.question ? ('"' + e.question + '"에 대한 답') : '오늘 밤의 질문에 대한 답';
+  }
+
+  function renderStrip(){
+    const row = document.getElementById('stripRow');
+    row.innerHTML = '';
+    entries.slice(-7).forEach(e=>{
+      const id = e.identity ? getIdentity(e.identity) : null;
+      const chip = document.createElement('div');
+      chip.className = 'day-chip';
+      const marks = [];
+      if(e.eveningDone && e.eveningDone.actionDone) marks.push('행동✓');
+      if(e.eveningDone && e.eveningDone.trapAvoided) marks.push('함정✓');
+      chip.title = e.action || '';
+      chip.innerHTML =
+        '<div class="d">' + shortDate(e.date) + '</div>' +
+        '<div class="emoji">' + (id ? id.emoji : '·') + '</div>' +
+        '<div class="marks">' + marks.join(' ') + '</div>';
+      row.appendChild(chip);
+    });
+  }
+
+  function renderBalance(){
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 13);
+    const cutoffStr = cutoff.getFullYear() + '-' + pad(cutoff.getMonth()+1) + '-' + pad(cutoff.getDate());
+    const counts = {};
+    IDENTITIES.forEach(id=>{ counts[id.key] = 0; });
+    entries.forEach(e=>{ if(e.date >= cutoffStr && e.identity) counts[e.identity] = (counts[e.identity] || 0) + 1; });
+    const max = Math.max(1, ...Object.values(counts));
+    const row = document.getElementById('barRow');
+    row.innerHTML = '';
+    IDENTITIES.forEach(id=>{
+      const count = counts[id.key] || 0;
+      const heightPx = Math.max(6, Math.round((count / max) * 70));
+      const col = document.createElement('div');
+      col.className = 'bar-col';
+      col.innerHTML =
+        '<span class="bar-count">' + count + '</span>' +
+        '<div class="bar" style="height:' + heightPx + 'px; background:' + id.color + '"></div>' +
+        '<span class="bar-label">' + id.emoji + '</span>';
+      row.appendChild(col);
+    });
+  }
+
+  function renderAll(){
+    renderHeaderDate();
+    renderSeasonRow();
+    renderIdentityGrid();
+    renderIdentityPanel();
+    renderActionInput();
+    renderTrapGrid();
+    renderTrapPanel();
+    renderAdventureChips();
+    renderAdventureInput();
+    renderQuestionInput();
+    renderSummary();
+    renderEveningCard();
+    renderStrip();
+    renderBalance();
+  }
+
+  document.getElementById('actionInput').addEventListener('blur', async (ev)=>{
+    const today = ensureToday();
+    today.action = ev.target.value;
+    await persistEntries();
+    renderIdentityPanel();
+    renderSummary();
+  });
+  document.getElementById('adventureInput').addEventListener('blur', async (ev)=>{
+    const today = ensureToday();
+    today.adventure = ev.target.value;
+    await persistEntries();
+    renderAdventureChips();
+    renderSummary();
+  });
+  document.getElementById('questionInput').addEventListener('blur', async (ev)=>{
+    const today = ensureToday();
+    today.question = ev.target.value;
+    await persistEntries();
+    renderQuestionChips();
+    renderSummary();
+    renderEveningCard();
+  });
+  document.getElementById('eveningAction').addEventListener('change', async (ev)=>{
+    const today = ensureToday();
+    today.eveningDone.actionDone = ev.target.checked;
+    await persistEntries();
+    renderStrip();
+  });
+  document.getElementById('eveningTrap').addEventListener('change', async (ev)=>{
+    const today = ensureToday();
+    today.eveningDone.trapAvoided = ev.target.checked;
+    await persistEntries();
+    renderStrip();
+  });
+  document.getElementById('eveningAnswer').addEventListener('blur', async (ev)=>{
+    const today = ensureToday();
+    today.eveningDone.eveningAnswer = ev.target.value;
+    await persistEntries();
+  });
+  document.getElementById('resetBtn').addEventListener('click', async ()=>{
+    if(confirm('모든 기록을 지울까요? 되돌릴 수 없어요.')){
+      entries = [];
+      season = null;
+      await persistEntries();
+      await persistSeason();
+      renderAll();
+    }
+  });
+
+  (async function init(){
+    await loadEntries();
+    await loadSeason();
+    renderAll();
+    const modeEl = document.getElementById('storageMode');
+    if(modeEl){ modeEl.textContent = hasCloudStorage ? '☁ Claude에 저장됨' : '📱 이 브라우저에 저장됨'; }
+  })();
+})();
+</script>
+</body>
+</html>
